@@ -8,8 +8,8 @@ if (process.env.NEXT_PUBLIC_PRODUCTION == true) {
   API = process.env.NEXT_PUBLIC_API_PRODUCTION;
 }
 
-export const signup = async (user) => {
-  let url = `${API}/users/signup`;
+export const signup = async (user, person) => {
+  let url = `${API}/${person}/signup`;
   return fetch(url, {
     method: "POST",
     headers: {
@@ -28,8 +28,8 @@ export const signup = async (user) => {
     });
 };
 
-export const logIn = async (user) => {
-  let url = `${API}/users/login`;
+export const logIn = async (user, person) => {
+  let url = `${API}/${person}/login`;
   return fetch(url, {
     method: "POST",
     headers: {
@@ -48,7 +48,7 @@ export const logIn = async (user) => {
 };
 
 export const logOut = async (next) => {
-  removeCookie("token");
+  removeCookie("token_user");
   removeLocalStorage("user");
   next();
   let url = `${API}/users/logout`;
@@ -66,7 +66,7 @@ export const logOut = async (next) => {
 };
 
 export const setCookie = (key, value) => {
-  if (process.browser) {
+  if (typeof window !== "undefined") {
     cookie.set(key, value, {
       expires: 1,
     });
@@ -74,7 +74,7 @@ export const setCookie = (key, value) => {
 };
 
 export const removeCookie = (key, value) => {
-  if (process.browser) {
+  if (typeof window !== "undefined") {
     cookie.remove(key, {
       expires: 1,
     });
@@ -82,37 +82,52 @@ export const removeCookie = (key, value) => {
 };
 
 export const getCookie = (key) => {
-  if (process.browser) {
+  if (typeof window !== "undefined") {
     return cookie.get(key);
   }
 };
 
 export const setLocalStorage = (key, value) => {
-  if (process.browser) {
+  if (typeof window !== "undefined") {
     localStorage.setItem(key, JSON.stringify(value));
   }
 };
 
 export const removeLocalStorage = (key) => {
-  if (process.browser) {
+  if (typeof window !== "undefined") {
     localStorage.removeItem(key);
   }
 };
 
-export const authenticate = (data, next) => {
+export const authenticate = (data, user, next) => {
   // console.log(data.token, data.user, data);
-  setCookie("token", data.token);
-  setLocalStorage("user", data.user);
+  if (user == "user") {
+    setCookie("token_user", data.token);
+    setLocalStorage(user, data.user);
+  } else if (user == "doctor") {
+    setCookie("token_doctor", data.token);
+    setLocalStorage(user, data.doctor);
+  } else if (user == "patient") {
+    setCookie("token_patient", data.token);
+    setLocalStorage(user, data.patient);
+  }
   next();
 };
 
-export const isAuth = () => {
-  if (process.browser) {
-    const cookieChecked = getCookie("token");
+export const isAuth = async (user) => {
+  if (typeof window !== "undefined") {
+    let cookieChecked;
+    if (user == "user") {
+      cookieChecked = getCookie("token_user");
+    } else if (user == "doctor") {
+      cookieChecked = getCookie("token_doctor");
+    } else if (user == "patient") {
+      cookieChecked = getCookie("token_patient");
+    }
     if (cookieChecked) {
-      if (localStorage.getItem("user")) {
+      if (localStorage.getItem(user)) {
         // console.log(typeof localStorage.getItem("user"));
-        return JSON.parse(localStorage.getItem("user"));
+        return JSON.parse(localStorage.getItem(user));
         // return JSON.parse(localStorage.getItem("user"));
       } else {
         return false;
